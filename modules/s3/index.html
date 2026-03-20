@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Premium Weather App</title>
+
+  <!-- jQuery -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: "Segoe UI", sans-serif;
+      color: white;
+      overflow-x: hidden;
+      min-height: 100vh;
+      transition: 0.5s;
+    }
+
+    /* 🌈 Sky Background */
+    .sky {
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(-45deg, #1e90ff, #00c6ff, #0072ff);
+      background-size: 400% 400%;
+      animation: gradientMove 12s ease infinite;
+      z-index: -5;
+    }
+
+    /* 🌙 Night Mode */
+    body.night .sky {
+      background: linear-gradient(-45deg, #0f2027, #203a43, #2c5364);
+    }
+
+    @keyframes gradientMove {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    /* ☁️ Clouds */
+    .cloud {
+      display: none;
+      position: absolute;
+      top: 10%;
+      width: 220px;
+      height: 65px;
+      background: rgba(255, 255, 255, 0.25);
+      border-radius: 50px;
+      filter: blur(1px);
+      animation: moveClouds 30s linear infinite;
+    }
+
+    .cloud:before,
+    .cloud:after {
+      content: "";
+      position: absolute;
+      background: rgba(255, 255, 255, 0.25);
+      width: 100px;
+      height: 85px;
+      border-radius: 50%;
+      top: -35px;
+    }
+
+    .cloud:before { left: 25px; }
+    .cloud:after { right: 25px; }
+
+    @keyframes moveClouds {
+      from { left: -250px; }
+      to { left: 110%; }
+    }
+
+    .cloud:nth-child(2) {
+      top: 25%;
+      width: 280px;
+      animation-duration: 45s;
+      opacity: 0.4;
+    }
+
+    .cloud:nth-child(3) {
+      top: 45%;
+      width: 180px;
+      animation-duration: 35s;
+      opacity: 0.3;
+    }
+
+    /* 🌧 Rain / Snow / Thunder */
+    .rain, .snow, .thunder {
+      display: none;
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: -2;
+    }
+
+    /* 🌧 Rain */
+    .rain {
+      background-image: repeating-linear-gradient(
+        transparent,
+        transparent 12px,
+        rgba(255,255,255,0.25) 13px
+      );
+      animation: rainFall 0.4s linear infinite;
+    }
+
+    @keyframes rainFall {
+      from { background-position: 0 0; }
+      to { background-position: 0 30px; }
+    }
+
+    /* ❄ Snow */
+    .snow {
+      background-image: radial-gradient(
+        rgba(255,255,255,0.8) 2px,
+        transparent 3px
+      );
+      background-size: 60px 60px;
+      animation: snowFall 3s linear infinite;
+    }
+
+    @keyframes snowFall {
+      from { background-position: 0 0; }
+      to { background-position: 0 200px; }
+    }
+
+    /* ⚡ Thunder */
+    .thunder {
+      background: rgba(255,255,255,0.15);
+      animation: flash 4s infinite;
+    }
+
+    @keyframes flash {
+      0%, 95%, 100% { opacity: 0; }
+      96% { opacity: 1; }
+      97% { opacity: 0; }
+      98% { opacity: 1; }
+    }
+
+    /* 🌤 Weather Mode Classes */
+    body.cloudy .cloud {
+      display: block;
+    }
+
+    body.rainy .rain {
+      display: block;
+    }
+
+    body.snowy .snow {
+      display: block;
+    }
+
+    body.stormy .thunder,
+    body.stormy .rain {
+      display: block;
+    }
+
+    /* Header */
+    h1 {
+      margin: 25px;
+      font-size: 2.3rem;
+      text-shadow: 2px 2px 8px black;
+      text-align: center;
+    }
+
+    /* Search */
+    .search-box {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 25px;
+    }
+
+    input {
+      padding: 12px;
+      border-radius: 12px;
+      border: none;
+      font-size: 16px;
+      width: 220px;
+      outline: none;
+    }
+
+    button {
+      padding: 12px 18px;
+      border-radius: 12px;
+      border: none;
+      cursor: pointer;
+      background: #ff9800;
+      color: white;
+      font-size: 16px;
+      transition: 0.2s;
+    }
+
+    button:hover {
+      background: #ffc107;
+    }
+
+    button:disabled {
+      background: gray;
+      cursor: not-allowed;
+    }
+
+    /* Forecast Cards */
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px;
+      padding: 20px;
+      max-width: 1100px;
+      margin: auto;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.15);
+      border-radius: 20px;
+      padding: 18px;
+      text-align: center;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.3);
+      backdrop-filter: blur(10px);
+      transition: 0.3s;
+    }
+
+    .card:hover {
+      transform: translateY(-8px);
+    }
+
+    .card img {
+      width: 55px;
+      margin: 10px 0;
+    }
+
+    .temp {
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Background -->
+  <div class="sky"></div>
+
+  <!-- Clouds -->
+  <div class="cloud"></div>
+  <div class="cloud"></div>
+  <div class="cloud"></div>
+
+  <!-- Effects -->
+  <div class="rain"></div>
+  <div class="snow"></div>
+  <div class="thunder"></div>
+
+  <h1>🌍 Premium Weather Forecast</h1>
+
+  <!-- Search -->
+  <div class="search-box">
+    <input type="text" id="cityInput" value="London" />
+    <button id="searchBtn">Get Forecast</button>
+  </div>
+
+  <!-- Cards -->
+  <div class="cards" id="forecastCards"></div>
+
+  <script>
+    const apiKey = "qFrvGhtJAra9OftIZRASx9KqZ026bQKG1aYWK0CL";
+    const baseUrl =
+      "https://5wuuc4zx28.execute-api.eu-west-2.amazonaws.com/prod/weather-api-test";
+
+    let currentRequest = null;
+
+    function getIcon(type) {
+      type = type.toLowerCase();
+
+      if (type.includes("clear"))
+        return "https://img.icons8.com/emoji/96/sun-emoji.png";
+      if (type.includes("cloud"))
+        return "https://img.icons8.com/emoji/96/cloud-emoji.png";
+      if (type.includes("rain"))
+        return "https://img.icons8.com/emoji/96/cloud-with-rain-emoji.png";
+      if (type.includes("snow"))
+        return "https://img.icons8.com/emoji/96/snowflake-emoji.png";
+      if (type.includes("storm") || type.includes("thunder"))
+        return "https://img.icons8.com/emoji/96/cloud-with-lightning-emoji.png";
+
+      return "https://img.icons8.com/emoji/96/sun-behind-cloud-emoji.png";
+    }
+
+function renderCards(data) {
+  let html = "";
+
+  data.forEach((item, index) => {
+    html += `
+      <div class="card" data-weather="${item.weather}">
+        <div>${item.date}</div>
+        <img src="${getIcon(item.weather)}" />
+        <div class="temp">${item.temp.toFixed(1)}°C</div>
+        <div>${item.weather}</div>
+        <div>Feels like ${item.feels_like.toFixed(1)}°C</div>
+        <p style="font-size:12px;opacity:0.7;">(Click me!)</p>
+      </div>
+    `;
+  });
+
+  $("#forecastCards").html(html);
+}
+
+    function applyWeatherBackground(data) {
+
+      // Remove old modes
+      $("body").removeClass("clear cloudy rainy snowy stormy");
+
+      const today = data[0].weather.toLowerCase();
+
+      if (today.includes("storm") || today.includes("thunder")) {
+        $("body").addClass("stormy");
+      }
+      else if (today.includes("rain")) {
+        $("body").addClass("rainy");
+      }
+      else if (today.includes("snow")) {
+        $("body").addClass("snowy");
+      }
+      else if (today.includes("cloud")) {
+        $("body").addClass("cloudy");
+      }
+      else {
+        $("body").addClass("clear");
+      }
+
+      // Night mode
+      const hour = new Date().getHours();
+      if (hour >= 18 || hour <= 6) $("body").addClass("night");
+      else $("body").removeClass("night");
+    }
+
+    function fetchWeather(city) {
+
+      if (currentRequest) currentRequest.abort();
+
+      $("#forecastCards").html("⏳ Loading forecast...");
+      $("#searchBtn").prop("disabled", true).text("Loading...");
+
+      currentRequest = $.ajax({
+        url: baseUrl,
+        method: "GET",
+        headers: { "x-api-key": apiKey },
+        data: { city },
+        dataType: "json",
+
+        success: function (data) {
+          $("#searchBtn").prop("disabled", false).text("Get Forecast");
+
+          renderCards(data);
+          applyWeatherBackground(data);
+        },
+
+        error: function () {
+          $("#searchBtn").prop("disabled", false).text("Get Forecast");
+          $("#forecastCards").html("❌ Failed to load forecast");
+        }
+      });
+    }
+
+    $(document).ready(function () {
+      fetchWeather("London");
+
+      $("#searchBtn").click(() => {
+        const city = $("#cityInput").val().trim();
+        if (city) fetchWeather(city);
+      });
+    });
+  </script>
+
+</body>
+</html>
