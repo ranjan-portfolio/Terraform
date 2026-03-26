@@ -8,7 +8,7 @@ export const options = {
 
 export default function () {
   // REPLACE THIS with your actual API Gateway Invoke URL
-  const apiUrl = 'https://npgq27rt0i.execute-api.eu-west-2.amazonaws.com/prod/weather-api-test'; 
+  const apiUrl = 'https://j1m0ofk11b.execute-api.eu-west-2.amazonaws.com/prod/weather-api-test'; 
   
   const res = http.get(apiUrl);
 

@@ -1,3 +1,7 @@
+resource "aws_api_gateway_account" "main" {
+    cloudwatch_role_arn = var.cloudwatch_role_arn
+}
+
 resource "aws_api_gateway_rest_api" "weather_api" {
   name = "weather-api-test"
 }
