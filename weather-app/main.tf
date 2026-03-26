@@ -10,6 +10,7 @@ module "cloudfront" {
   s3_domain_name                     = module.aws_s3_bucket.bucket_domain_name
   cloudfront_alternate_domain        = "test.rancher-ranjanaws.com"
   aws_acm_certificate_validation_arn = module.weatherapp_certificate.cert_validation_arn
+  aws_cloudwatch_distribution_arn = module.cloudwatch.cloudwatch_policy_arn
 }
 
 
@@ -35,9 +36,14 @@ module "weatherapp_certificate" {
 module "gateway" {
   source            = "./modules/gateway"
   lambda_invoke_arn = module.lambda.lambda_invoke_arn
+  cloudwatch_role_arn = module.cloudwatch.cloudwatch_policy_arn
 }
 
 module "lambda" {
   source                = "./modules/lambda"
   gateway_execution_arn = module.gateway.gateway_execution_arn
+}
+
+module "cloudwatch"{
+  source="./modules/cloudwatch"
 }

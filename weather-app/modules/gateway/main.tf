@@ -44,5 +44,44 @@ resource "aws_api_gateway_stage" "name" {
   deployment_id = aws_api_gateway_deployment.deployment.id
   rest_api_id = aws_api_gateway_rest_api.weather_api.id
   stage_name = "prod"
+
+  xray_tracing_enabled = true
+
+  access_log_settings {
+    destination_arn = aws_cloudwatch_log_group.apigw_logs.arn
+    format = jsonencode({
+    requestId      = "$context.requestId"
+    ip             = "$context.identity.sourceIp"
+    caller         = "$context.identity.caller"
+    user           = "$context.identity.user"
+    requestTime    = "$context.requestTime"
+    httpMethod     = "$context.httpMethod"
+    resourcePath   = "$context.resourcePath"
+    status         = "$context.status"
+    protocol       = "$context.protocol"
+    responseLength = "$context.responseLength"
+    errorMessage   = "$context.error.message"
+    integrationLatency = "$context.integrationLatency"
+    responseLatency    = "$context.responseLatency"
+    xrayTraceId        = "$context.xrayTraceId"
+    })
+  }
   
+}
+
+resource "aws_cloudwatch_log_group" "apigw_logs" {
+  name              = "/aws/apigateway/weather-api"
+  retention_in_days = 14
+}
+
+resource "aws_api_gateway_method_settings" "all" {
+  rest_api_id = aws_api_gateway_rest_api.weather_api.id
+  stage_name  = aws_api_gateway_stage.name.stage_name
+  method_path = "*/*"
+
+  settings {
+    metrics_enabled    = true
+    logging_level      = "INFO"   # Use "ERROR" in prod to reduce noise
+    data_trace_enabled = true     # Logs full request/response — disable if handling sensitive data
+  }
 }

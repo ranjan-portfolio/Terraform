@@ -12,3 +12,8 @@ variable "aws_acm_certificate_validation_arn" {
   type=string
   description = "certificate validation arn"
 }
+
+variable "aws_cloudwatch_distribution_arn" {
+  type=string
+  description = "cloudfromt arn"
+}
