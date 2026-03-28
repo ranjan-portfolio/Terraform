@@ -17,3 +17,8 @@ variable "aws_cloudwatch_distribution_arn" {
   type=string
   description = "cloudfromt arn"
 }
+
+variable "aws_wafv2_web_acl_arn" {
+  type = string
+  description = "wafv2 acl arn"
+}

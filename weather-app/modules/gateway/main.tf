@@ -70,6 +70,8 @@ resource "aws_api_gateway_stage" "name" {
     xrayTraceId        = "$context.xrayTraceId"
     })
   }
+
+  depends_on = [ aws_api_gateway_account.main ]
   
 }
 

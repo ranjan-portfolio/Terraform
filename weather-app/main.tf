@@ -11,6 +11,7 @@ module "cloudfront" {
   cloudfront_alternate_domain        = "test.rancher-ranjanaws.com"
   aws_acm_certificate_validation_arn = module.weatherapp_certificate.cert_validation_arn
   aws_cloudwatch_distribution_arn = module.cloudwatch.cloudwatch_policy_arn
+  aws_wafv2_web_acl_arn = module.waf.web_acl_arn
 }
 
 
@@ -46,4 +47,12 @@ module "lambda" {
 
 module "cloudwatch"{
   source="./modules/cloudwatch"
+}
+
+module "waf" {
+  providers = {
+    aws           = aws           # The default (eu-west-2)
+    aws.us_east_1 = aws.us_east_1 # The alias you created
+  }
+  source = "./modules/waf"
 }

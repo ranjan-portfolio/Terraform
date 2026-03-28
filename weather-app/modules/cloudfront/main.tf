@@ -43,6 +43,8 @@ resource "aws_cloudfront_distribution" "cdn" {
     }
   }
 
+  web_acl_id = var.aws_wafv2_web_acl_arn
+
   restrictions {
     geo_restriction {
       restriction_type = "none"
