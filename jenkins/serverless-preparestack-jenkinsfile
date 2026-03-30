@@ -1,0 +1,133 @@
+pipeline {
+    agent any
+
+    stages {
+
+        stage("Clone Terraform project") {
+            steps {
+                git(
+                    url: 'https://github.com/ranjan-portfolio/Terraform.git',
+                    branch: 'main'
+                    
+                )
+            }
+        }
+
+       
+
+        stage("Run Terraform") {
+            steps {
+                
+
+                 sh '''
+                    cd weather-app
+                    /opt/homebrew/bin/terraform init
+                    /opt/homebrew/bin/terraform plan -out plan_$(date +%d%m%Y%H%M%S)
+                    /opt/homebrew/bin/terraform apply --auto-approve
+                 '''
+            }
+        }
+
+        stage("Modify index.html") {
+            steps {
+                 sh '''
+                       cd weather-app
+                       apiURL=`/opt/homebrew/bin/terraform output -raw gateway_invocation_url`
+                       sed -i '' "s|const baseUrl *= *\\".*\\"|const baseUrl=\\"${apiURL}/weather-api-test\\"|" \
+                            ./modules/s3/index.html
+                    '''
+                
+            }
+        }
+
+        stage("Upload to S3") {
+            steps {   
+                    sh '''
+                        cd weather-app
+                        S3_URI=`/opt/homebrew/bin/terraform output -raw s3_bucket_uri`
+                        /usr/local/bin/aws s3 cp ./modules/s3/index.html \
+                        ${S3_URI}/index.html
+                        '''
+            }
+        }
+
+        stage("Invalidate CloudFront") {
+            steps {
+                
+                    
+                        sh '''
+                            cd weather-app
+                            distributionId=`/opt/homebrew/bin/terraform output -raw aws_cloudfront_distribution_id`
+                            response=$(/usr/local/bin/aws cloudfront create-invalidation \
+                                --distribution-id ${distributionId} \
+                                --paths "/*")
+
+                            invalidation_id=$(echo "$response" | jq -r '.Invalidation.Id')
+                            echo "Invalidation ID: $invalidation_id"
+
+                            status=$(/usr/local/bin/aws cloudfront get-invalidation \
+                                --distribution-id ${distributionId} \
+                                --id "$invalidation_id" | jq -r '.Invalidation.Status')
+
+                            echo "Status: $status"
+
+                            if [ "$status" = "Completed" ]; then
+                                echo "CloudFront invalidation successful"
+                            fi
+                        '''
+                    
+                
+                
+            }
+        }
+    }
+
+    post{
+        always {
+            script{
+                def dateToday=new Date().format("ddMMYYYY")
+                def folderName="${dateToday}-${env.BUILD_NUMBER}"
+                sh "cd weather-app && mkdir ${folderName} && mv plan* ./${folderName}"
+            }
+                
+        }
+        success{
+            echo 'Deployment successful'
+            emailext(
+                subject: "Serverless Build Successful: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: """
+                    Hello Team,
+
+                    The build has success.
+
+                    Job: ${env.JOB_NAME}
+                    Build Number: ${env.BUILD_NUMBER}
+                    Check details here: ${env.BUILD_URL}
+
+                    Thanks,
+                    Jenkins
+                """,
+                to: "ranjanabha@gmail.com"
+            )
+        }
+        failure{
+            echo 'Deployment failure'
+            emailext(
+                subject: "Serverless deployment failed: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: """
+                    Hello Team,
+
+                    The build has failure.
+
+                    Job: ${env.JOB_NAME}
+                    Build Number: ${env.BUILD_NUMBER}
+                    Check details here: ${env.BUILD_URL}
+
+                    Thanks,
+                    Jenkins
+                """,
+                to: "ranjanabha@gmail.com"
+            )
+        }
+    }
+}

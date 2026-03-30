@@ -1,0 +1,55 @@
+pipeline{
+    agent any
+    stages{
+        stage('Destroy serverless pipeline'){
+            steps{
+                sh '''
+                  cd "../Serverless pipeline/weather-app"
+                  /opt/homebrew/bin/terraform destroy --auto-approve
+                '''
+            }
+        }
+    }
+    
+    post{
+        success{
+            echo 'Deployment successful'
+            emailext(
+                subject: "Destory Serverless Build Successful: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: """
+                    Hello Team,
+
+                    Destroy serverless is successful.
+
+                    Job: ${env.JOB_NAME}
+                    Build Number: ${env.BUILD_NUMBER}
+                    Check details here: ${env.BUILD_URL}
+
+                    Thanks,
+                    Jenkins
+                """,
+                to: "ranjanabha@gmail.com"
+            )
+        }
+        failure{
+            echo 'Deployment failure'
+            emailext(
+                subject: "Serverless deployment failed: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: """
+                    Hello Team,
+
+                    Serverless stack teradown failed. Please check server url for additional info.
+
+                    Job: ${env.JOB_NAME}
+                    Build Number: ${env.BUILD_NUMBER}
+                    Check details here: ${env.BUILD_URL}
+
+                    Thanks,
+                    Jenkins
+                """,
+                to: "ranjanabha@gmail.com"
+            )
+            
+        }
+    }
+}
